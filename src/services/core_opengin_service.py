@@ -34,7 +34,7 @@ class OpenGINService:
             # Consider logging the error
             return {"error": f"Failed to parse response for entity {entityId}: {str(e)}"}
     
-    async def fetch_relation(self, entityId, relationName, activeAt, relatedEntityId="", startTime="", endTIme="", id="", direction="OUTGOING"):
+    async def fetch_relation(self, entityId, relationName="", activeAt="", relatedEntityId="", startTime="", endTIme="", id="", direction="OUTGOING"):
         url = f"{self.config['BASE_URL_QUERY']}/v1/entities/{entityId}/relations"
         headers = {"Content-Type": "application/json"}  
         payload = {
@@ -46,7 +46,14 @@ class OpenGINService:
             "activeAt": activeAt,
             "direction": direction,
         }
-        async with self.session.post(url, json=payload, headers=headers) as response:
-            response.raise_for_status()
-            data = await response.json()
-            return data
+        try:
+            async with self.session.post(url, json=payload, headers=headers) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return data
+        except ClientError as e:
+            # Consider logging the error
+            return {"error": f"Failed to fetch relations by id {entityId} due to a network error: {str(e)}"}
+        except (KeyError, IndexError) as e:
+            # Consider logging the error
+            return {"error": f"Failed to parse response for entity {entityId}: {str(e)}"}
