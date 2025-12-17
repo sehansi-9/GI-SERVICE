@@ -281,3 +281,34 @@ class OrganisationService:
                 "statusCode": 500,
                 "message": str(e)
             }
+        
+    # API: persons by portfolio
+    async def persons_by_portfolio(self, portfolio_id, president_id, selected_date):
+        try:
+            person_relation_list = await self.opengin_service.fetch_relation(
+                entityId=portfolio_id,
+                relationName="AS_APPOINTED",
+                activeAt=f"{selected_date}T00:00:00Z"
+            )
+
+            results = await asyncio.gather(*[
+                self.enrich_person_data(selected_date=selected_date, president_id=president_id, person_realtion=person_relation)
+                for person_relation in person_relation_list
+            ], return_exceptions=True)
+
+            persons = [p for p in results if not isinstance(p, Exception)]
+
+            # final results to return
+            finalResult = {
+                "totalPeople": len(persons),
+                "peopleList" : results,
+            }
+
+            return finalResult
+
+        except Exception as e:
+            return {
+                "body": "",
+                "statusCode": 500,
+                "message": str(e)
+            }
