@@ -592,21 +592,28 @@ paths:
                 type: object
                 properties:
                   body:
-                    type: array
-                    items:
-                      type: object
-                      required:
-                      - name
-                      - id
-                      properties:
-                        name:
-                          type: string
-                        id:
-                          type: string
-                        isNew:
-                          type: boolean
-                        hasData:
-                          type: boolean
+                    type: object
+                    properties:
+                      totalDepartments:
+                        type: integer
+                      newDepartments:
+                        type: integer
+                      departmentList:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - name
+                          - id
+                          properties:
+                            name:
+                              type: string
+                            id:
+                              type: string
+                            isNew:
+                              type: boolean
+                            hasData:
+                              type: boolean
               
               example:
                 body:
@@ -650,6 +657,8 @@ paths:
               type: object
               description: required date
               properties:
+                presidentId:
+                  type: string
                 activeDate:
                   type: object
                   required:
@@ -666,32 +675,39 @@ paths:
                 type: object
                 properties:
                   body:
-                    type: array
-                    items:
-                      type: object
-                      required:
-                      - name
-                      - id
-                      properties:
-                        name:
-                          type: string
-                        id:
-                          type: string
-                        isPresident:
-                          type: boolean
-                        isNew:
-                          type: boolean
+                    type: object
+                    properties:
+                      totalPeople:
+                        type: integer
+                      peopleList:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - name
+                          - id
+                          properties:
+                            name:
+                              type: string
+                            id:
+                              type: string
+                            isPresident:
+                              type: boolean
+                            isNew:
+                              type: boolean
 
               example:
                 body:
-                - name: Anura Kumara Dissanayake
-                  id: 2403-03_cit_1
-                  isPresident: true
-                  isNew: false
-                - name: Gotabaya Rajapaksa
-                  id: 2149-34_cit_1
-                  isPresident: false
-                  isNew: false
+                - totalPeople:
+                  peopleList:
+                  - name: Anura Kumara Dissanayake
+                    id: 2403-03_cit_1
+                    isPresident: true
+                    isNew: false
+                  - name: Gotabaya Rajapaksa
+                    id: 2149-34_cit_1
+                    isPresident: false
+                    isNew: false
                   
         "400":
           description: Bad request

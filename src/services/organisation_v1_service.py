@@ -192,71 +192,50 @@ class OrganisationService:
     
     # helper: enrich department
     async def enrich_department_item(self, department_relation, selected_date):
+        try:
 
-        department_id = department_relation.get("relatedEntityId")
+            department_id = department_relation.get("relatedEntityId")
 
-        department_data_task = self.opengin_service.get_entity_by_id(entityId=department_id)
-        dataset_task = self.opengin_service.fetch_relation(entityId=department_id, relationName="AS_CATEGORY")
+            # run parallel calls to get department data and parent category relations to ensure the department has data
+            department_data, dataset_relations = await asyncio.gather(
+                self.opengin_service.get_entity_by_id(entityId=department_id),
+                self.opengin_service.fetch_relation(entityId=department_id, relationName="AS_CATEGORY")
+            )
 
-        # run parallel calls to get department data and parent category relations to ensure the department has data
-        department_data, dataset_relations = await asyncio.gather(department_data_task, dataset_task, return_exceptions=True)
-
-        # decode name
-        name = decode_protobuf_attribute_name(department_data.get("name", "Unknown"))
+            # decode name
+            name = decode_protobuf_attribute_name(department_data.get("name", "Unknown"))
             
-        # check the department is new or not
-        department_start_date = department_relation.get("startTime","")
-        is_new = department_start_date == f"{selected_date}T00:00:00Z"
+            # check the department is new or not
+            department_start_date = department_relation.get("startTime","")
+            is_new = department_start_date == f"{selected_date}T00:00:00Z"
 
-        # check the department has data or not
-        has_data = bool(dataset_relations)
+            # check the department has data or not
+            has_data = bool(dataset_relations)
             
-        final_result = {
-            "id": department_id,
-            "name": name,
-            "isNew": is_new,
-            "hasData": has_data
-        }
+            final_result = {
+                "id": department_id,
+                "name": name,
+                "isNew": is_new,
+                "hasData": has_data
+            }
 
-        return final_result
+            return final_result
+        except Exception as e:
+            return e
 
     # API: departments by portfolio
     async def departments_by_portfolio(self, portfolio_id, selected_date):
-        """
-        Docstring for department_by_portfolio
-        
-        :param portfolio_id: Portfolio Id
-        :param selected_date: Selected Date
-
-        output type: 
-        {
-            "totalDepartments": 0,
-            "newDepartments": 0,
-            "departmentList": [
-                {
-                "id": "",
-                "name": "",
-                "isNew": false,
-                "hasData": false
-                },
-            ]
-        }
-        """
-
         try:
             department_relation_list = await self.opengin_service.fetch_relation(
                 entityId=portfolio_id,
                 relationName="AS_DEPARTMENT",
                 activeAt=f"{selected_date}T00:00:00Z"
             )
-            
-            # tasks to run in parallel
-            enrich_department_tasks = [
+
+            results = await asyncio.gather(*[
                 self.enrich_department_item(department_relation=department_relation, selected_date=selected_date)
                 for department_relation in department_relation_list
-            ]
-
-            results = await asyncio.gather(*enrich_department_tasks, return_exceptions=True)
+            ], return_exceptions=True)
 
             departments = [
                 r for r in results if not isinstance(r, Exception)
@@ -265,13 +244,48 @@ class OrganisationService:
             # Calculate final counts
             new_departments = sum(1 for d in departments if d.get("isNew"))
 
-            # final departments to return
+            # final results to return
             finalResult = {
-                "totalDepartments": len(departments),
+                "totalDepartments": len(results),
                 "newDepartments": new_departments,
-                "departmentList" : departments,
+                "departmentList" : results,
             }
 
             return finalResult
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+            return {
+                "body": "",
+                "statusCode": 500,
+                "message": str(e)
+            }
+        
+    # API: persons by portfolio
+    async def persons_by_portfolio(self, portfolio_id, president_id, selected_date):
+        try:
+            person_relation_list = await self.opengin_service.fetch_relation(
+                entityId=portfolio_id,
+                relationName="AS_APPOINTED",
+                activeAt=f"{selected_date}T00:00:00Z"
+            )
+
+            results = await asyncio.gather(*[
+                self.enrich_person_data(selected_date=selected_date, president_id=president_id, person_realtion=person_relation)
+                for person_relation in person_relation_list
+            ], return_exceptions=True)
+
+            persons = [p for p in results if not isinstance(p, Exception)]
+
+            # final results to return
+            finalResult = {
+                "totalPeople": len(persons),
+                "peopleList" : results,
+            }
+
+            return finalResult
+
+        except Exception as e:
+            return {
+                "body": "",
+                "statusCode": 500,
+                "message": str(e)
+            }
