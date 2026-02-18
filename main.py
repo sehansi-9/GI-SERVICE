@@ -4,6 +4,7 @@ from src.routers import organisation_router, data_router, search_router
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from src.middleware.throttling import ThrottlingMiddleware
 from src.utils.http_client import http_client
 from contextlib import asynccontextmanager
 import logging
@@ -52,6 +53,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Throttling: queues excess requests instead of rejecting with 503
+# max_concurrent: max requests processed at once
+# timeout: seconds to wait in queue before returning 429
+app.add_middleware(ThrottlingMiddleware, max_concurrent=200, timeout=30.0)
 
 app.include_router(payload_incoming_router.router)
 app.include_router(organisation_router)
