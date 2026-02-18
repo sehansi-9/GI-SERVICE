@@ -1,5 +1,6 @@
 import logging  
 import asyncio
+from src.utils.concurrency import limited_gather
 from typing import Dict
 from src.exception.exceptions import InternalServerError, NotFoundError
 from src.exception.exceptions import BadRequestError
@@ -152,7 +153,7 @@ class DataService:
                 parentCategories = await self.opengin_service.get_entities(entity=entity)
 
                 enrich_category_task = [self.enrich_category(categories_dictionary=categories_dictionary, category=category) for category in parentCategories]
-                await asyncio.gather(*enrich_category_task)
+                await limited_gather(*enrich_category_task)
 
                 categories = self.convert_dict_to_list(categories_dictionary,"name","categoryIds")
 
@@ -167,9 +168,9 @@ class DataService:
                 
                 fetch_category_relation_tasks = [self.opengin_service.fetch_relation(entityId=category_id, relation=category_relation_instance) for category_id in category_ids]
                 fetch_dataset_relation_tasks = [self.opengin_service.fetch_relation(entityId=category_id, relation=dataset_relation_instance) for category_id in category_ids]
-                category_relations, dataset_relations = await asyncio.gather(
-                    asyncio.gather(*fetch_category_relation_tasks), 
-                    asyncio.gather(*fetch_dataset_relation_tasks),
+                category_relations, dataset_relations = await limited_gather(
+                    limited_gather(*fetch_category_relation_tasks), 
+                    limited_gather(*fetch_dataset_relation_tasks),
                 )
 
                 # tasks for parallel execution
@@ -185,9 +186,9 @@ class DataService:
                     ]
 
                 # parallel execution of tasks
-                await asyncio.gather(
-                    asyncio.gather(*category_enrich_tasks),
-                    asyncio.gather(*dataset_enrich_tasks)
+                await limited_gather(
+                    limited_gather(*category_enrich_tasks),
+                    limited_gather(*dataset_enrich_tasks)
                 )
 
                 # Convert the categories_dictionary and dataset_dictionary to the format required
@@ -229,7 +230,7 @@ class DataService:
 
             # parallel execution of tasks
             dataset_entity_tasks = [self.opengin_service.get_entities(entity=entity) for entity in dataset_entities]
-            dataset_entities = await asyncio.gather(*dataset_entity_tasks)
+            dataset_entities = await limited_gather(*dataset_entity_tasks)
 
             # get the dataset name task
             dataset_first_datum = dataset_entities[0][0]
