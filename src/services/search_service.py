@@ -1,5 +1,4 @@
 import asyncio
-from src.utils.concurrency import limited_gather
 import logging
 from typing import List, Dict, Any, Optional
 from src.exception.exceptions import BadRequestError, InternalServerError
@@ -70,7 +69,7 @@ class SearchService:
                     search_type_names.append(display_name)
 
             # Run selected searches in parallel
-            results = await limited_gather(*search_tasks, return_exceptions=True)
+            results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
             # Collect successful results, log errors
             all_results: List[Dict[str, Any]] = []

@@ -12,7 +12,7 @@ class HTTPClient:
         # Connection pool configuration
         # For resource-constrained environments (0.5 CPU, 350MB RAM)
         self.pool_size = int(os.getenv("HTTP_POOL_SIZE", "50"))
-        self.pool_size_per_host = int(os.getenv("HTTP_POOL_SIZE_PER_HOST", "30"))
+        self.pool_size_per_host = int(os.getenv("HTTP_POOL_SIZE_PER_HOST", "40"))
 
     async def start(self):
         """Create session on app startup"""

@@ -2,7 +2,6 @@ from src.exception.exceptions import BadRequestError
 from src.exception.exceptions import NotFoundError
 from src.exception.exceptions import InternalServerError
 import asyncio
-from src.utils.concurrency import limited_gather
 from src.utils.util_functions import Util
 from aiohttp import ClientSession
 from src.utils import http_client
@@ -97,7 +96,7 @@ class OrganisationService:
                         ) for  person in appointed_ministers_list
                 ]
                 # result contains portfolio_task result and person_data results respectively
-                results = await limited_gather(portfolio_task, *person_data, return_exceptions=True)
+                results = await asyncio.gather(portfolio_task, *person_data, return_exceptions=True)
                 
                 portfolio_data = results[0][0]
                 person_data_list = results[1:]
@@ -212,7 +211,7 @@ class OrganisationService:
             )
 
             # Process each portfolio item in parallel
-            results = await limited_gather(*[
+            results =await asyncio.gather(*[
                 self.process_portfolio_item(portfolio, president_id, selected_date)
                 for portfolio in activePortfolioList
             ], return_exceptions=True)
@@ -338,7 +337,7 @@ class OrganisationService:
                 for department_relation in department_relation_list
             ]
 
-            results = await limited_gather(*enrich_department_tasks, return_exceptions=True)
+            results = await asyncio.gather(*enrich_department_tasks, return_exceptions=True)
 
             departments = [
                 r for r in results if not isinstance(r, Exception)
