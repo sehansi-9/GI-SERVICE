@@ -54,10 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Throttling: queues excess requests instead of rejecting with 503
-# max_concurrent: max requests processed at once
-# timeout: seconds to wait in queue before returning 429
-app.add_middleware(ThrottlingMiddleware, max_concurrent=200, timeout=30.0)
+app.add_middleware(ThrottlingMiddleware)
 
 app.include_router(payload_incoming_router.router)
 app.include_router(organisation_router)

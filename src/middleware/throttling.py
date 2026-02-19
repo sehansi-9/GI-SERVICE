@@ -3,6 +3,7 @@ import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +18,10 @@ class ThrottlingMiddleware(BaseHTTPMiddleware):
     response (which is the correct HTTP status for throttling).
     """
     
-    def __init__(self, app, max_concurrent: int = 200, timeout: float = 30.0):
+    def __init__(self, app):
         super().__init__(app)
-        self.semaphore = asyncio.Semaphore(max_concurrent)
-        self.timeout = timeout
-        self.max_concurrent = max_concurrent
+        self.timeout = settings.THROTTLING_TIMEOUT
+        self.semaphore = asyncio.Semaphore(settings.THROTTLING_MAX_CONCURRENT)
     
     async def dispatch(self, request: Request, call_next):
         try:
