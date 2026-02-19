@@ -334,3 +334,191 @@ async def test_prime_minister_with_internal_server_error(organisation_service, m
     root_cause = exc_info.value.__cause__
     assert isinstance(root_cause, Exception)
     assert str(root_cause) == original_error_message
+
+@pytest.mark.asyncio
+async def test_department_history_timeline_success(organisation_service, mock_opengin_service):
+    # Setup IDs
+    # Lineage: dep_01 -> dep_02 (via RENAMED_TO)
+    department_id = "dep_01"
+    
+    # Mock _get_renamed_lineage
+    # 1. dep_01 -> fetch_relation(RENAMED_TO) -> [dep_02]
+    # 2. dep_02 -> fetch_relation(RENAMED_TO) -> []
+    
+    # Mock _fetch_and_map_relations (AS_DEPARTMENT)
+    # 1. dep_01 -> [min_01 (2020-01 to 2021-01)]
+    # 2. dep_02 -> [min_02 (2021-01 to 2022-01)]
+    
+    # Mock _fetch_and_map_entities (Ministries)
+    # min_01, min_02
+    
+    # Mock _fetch_and_map_relations (AS_APPOINTED)
+    # min_01 -> [pers_01 (2020-02 to 2020-08)]
+    # min_02 -> [pers_01 (2021-05 to 2021-12)]
+    
+    # Mock _fetch_and_map_entities (Persons)
+    # pers_01
+    
+    # Mock President context
+    # gov_01 -> fetch_relation(AS_PRESIDENT) -> [pres_01 (Open-ended)]
+    # pres_01 -> get_entities -> President Entity
+    
+    mock_opengin_service.fetch_relation.side_effect = [
+        [Relation(relatedEntityId="dep_02")], # Lineage dep_01
+        [], # Lineage dep_02
+        [Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")], # dep_01 -> min_01
+        [Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")], # dep_02 -> min_02
+        [Relation(relatedEntityId="pers_01", startTime="2020-02-01T00:00:00Z", endTime="2020-08-01T00:00:00Z")], # min_01 -> pers_01
+        [Relation(relatedEntityId="pers_01", startTime="2021-05-01T00:00:00Z", endTime="2021-12-01T00:00:00Z")], # min_02 -> pers_01
+        [Relation(relatedEntityId="pres_01", startTime="2019-01-01T00:00:00Z", endTime="")] # President relation
+    ]
+    
+    # Mocking entities
+    # The order of get_entities calls depends on sorting/parallel execution, but map results expect specific IDs
+    mock_opengin_service.get_entities.side_effect = [
+        [Entity(id="min_01", name='{"value": "4d696e6973747279204f6e65"}')], # Ministry One
+        [Entity(id="min_02", name='{"value": "4d696e69737472792054776f"}')], # Ministry Two
+        [Entity(id="pers_01", name='{"value": "4d696e69737465722041"}')],    # Minister A
+        [Entity(id="pres_01", name='{"value": "507265736964656e742058"}')]   # President X
+    ]
+
+    result = await organisation_service.department_history_timeline(department_id=department_id)
+    
+    assert result is not None
+    assert isinstance(result, list)
+    
+    # We expect:
+    # 1. 2021-12-01 to 2022-01-01: Ministry Two - Gap (filled by President X)
+    # 2. 2021-05-01 to 2021-12-01: Ministry Two - Minister A
+    # 3. 2021-01-01 to 2021-05-01: Ministry Two - Gap (filled by President X)
+    # 4. 2020-08-01 to 2021-01-01: Ministry One - Gap (filled by President X)
+    # 5. 2020-02-01 to 2020-08-01: Ministry One - Minister A
+    # 6. 2020-01-01 to 2020-02-01: Ministry One - Gap (filled by President X)
+
+    # Note: Sequential entries with SAME MINISTER and SAME MINISTRY NAME are collapsed.
+    # In this test, min_01 and min_02 have different names ("Ministry One" vs "Ministry Two"), 
+    # so Minister A won't collapse across them.
+    
+    assert len(result) == 6
+    assert result[0]["minister_name"] == "President X"
+    assert result[1]["minister_name"] == "Minister A"
+    assert result[1]["ministry_name"] == "Ministry Two"
+    assert result[4]["minister_name"] == "Minister A"
+    assert result[4]["ministry_name"] == "Ministry One"
+    assert "period" in result[0]
+    assert "startTime" not in result[0]
+    assert "endTime" not in result[0]
+
+@pytest.mark.asyncio
+async def test_department_history_timeline_collapsing(organisation_service, mock_opengin_service):
+    # Setup IDs: Same ministry name ("Ministry of Media") for two different ministry IDs
+    department_id = "dep_01"
+    
+    mock_opengin_service.fetch_relation.side_effect = [
+        [], # Lineage (none)
+        [Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z"),
+         Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")], # min-dep relations
+        [Relation(relatedEntityId="pers_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")], # min_01 -> pers_01
+        [Relation(relatedEntityId="pers_01", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")]  # min_02 -> pers_01
+    ]
+    
+    # "Ministry of Media" in hex: 4d696e6973747279206f66204d65646961
+    mock_opengin_service.get_entities.side_effect = [
+        [Entity(id="min_01", name='{"value": "4d696e6973747279206f66204d65646961"}')], # Ministry of Media
+        [Entity(id="min_02", name='{"value": "4d696e6973747279206f66204d65646961"}')], # Ministry of Media
+        [Entity(id="pers_01", name='{"value": "52616e696c"}')]                         # Ranil
+    ]
+
+    result = await organisation_service.department_history_timeline(department_id=department_id)
+    
+    # Should collapse into ONE entry because same name and same person across min_01 and min_02
+    assert len(result) == 1
+    assert result[0]["minister_name"] == "Ranil"
+    assert result[0]["period"] == "2020-01-01 - 2022-01-01"
+
+@pytest.mark.asyncio
+async def test_get_renamed_lineage_chain(organisation_service, mock_opengin_service):
+    # Chain: A -> B -> C
+    start_id = "A"
+    mock_opengin_service.fetch_relation.side_effect = [
+        [Relation(relatedEntityId="B")], # A -> B
+        [Relation(relatedEntityId="C")], # B -> C
+        []                              # C -> none
+    ]
+    
+    result = await organisation_service._get_renamed_lineage(start_id)
+    assert result == {"A", "B", "C"}
+    assert mock_opengin_service.fetch_relation.call_count == 3
+
+@pytest.mark.asyncio
+async def test_get_renamed_lineage_no_renaming(organisation_service, mock_opengin_service):
+    start_id = "A"
+    mock_opengin_service.fetch_relation.return_value = []
+    
+    result = await organisation_service._get_renamed_lineage(start_id)
+    assert result == {"A"}
+    mock_opengin_service.fetch_relation.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_fetch_and_map_entities_success(organisation_service, mock_opengin_service):
+    entity_ids = ["e1", "e2"]
+    mock_opengin_service.get_entities.side_effect = [
+        [Entity(id="e1", name="name1")],
+        [Entity(id="e2", name="name2")]
+    ]
+    
+    result = await organisation_service._fetch_and_map_entities(entity_ids)
+    
+    assert len(result) == 2
+    assert result["e1"].id == "e1"
+    assert result["e2"].id == "e2"
+    assert mock_opengin_service.get_entities.call_count == 2
+
+@pytest.mark.asyncio
+async def test_fetch_and_map_entities_partial_failure(organisation_service, mock_opengin_service):
+    entity_ids = ["e1", "e2"]
+    # Suppose e2 fails or returns nothing
+    mock_opengin_service.get_entities.side_effect = [
+        [Entity(id="e1", name="name1")],
+        Exception("Failed to fetch")
+    ]
+    
+    result = await organisation_service._fetch_and_map_entities(entity_ids)
+    
+    assert len(result) == 1
+    assert "e1" in result
+    assert "e2" not in result
+
+@pytest.mark.asyncio
+async def test_fetch_and_map_relations_success(organisation_service, mock_opengin_service):
+    entity_ids = ["e1", "e2"]
+    query = Relation(name="TEST")
+    r1 = Relation(relatedEntityId="r1")
+    r2 = Relation(relatedEntityId="r2")
+    
+    mock_opengin_service.fetch_relation.side_effect = [
+        [r1],
+        [r2]
+    ]
+    
+    result = await organisation_service._fetch_and_map_relations(entity_ids, query)
+    
+    assert len(result) == 2
+    assert result["e1"] == [r1]
+    assert result["e2"] == [r2]
+
+@pytest.mark.asyncio
+async def test_fetch_and_map_relations_with_errors(organisation_service, mock_opengin_service):
+    entity_ids = ["e1", "e2"]
+    query = Relation(name="TEST")
+    
+    mock_opengin_service.fetch_relation.side_effect = [
+        [Relation(relatedEntityId="r1")],
+        Exception("Error")
+    ]
+    
+    result = await organisation_service._fetch_and_map_relations(entity_ids, query)
+    
+    assert len(result) == 2
+    assert len(result["e1"]) == 1
+    assert result["e2"] == [] # Should default to empty list on error
