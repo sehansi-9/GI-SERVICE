@@ -1,29 +1,34 @@
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
 from typing import Optional
-import os
-
+from src.core.config import settings
 class HTTPClient:
     "Single HTTP client for the application"
 
     def __init__(self):
         self._session: Optional[ClientSession] = None
-        self.timeout = ClientTimeout(total=90, connect=30, sock_connect=30, sock_read=90)
+
+        self.total_secons = int(settings.HTTP_TIMEOUT_TOTAL)
+        self.connect_seconds = int(settings.HTTP_TIMEOUT_CONNECT)
+        self.sock_connect_seconds = int(settings.HTTP_TIMEOUT_SOCK_CONNECT)
+        self.sock_read_seconds = int(settings.HTTP_TIMEOUT_SOCK_READ)
+
+        self.timeout = ClientTimeout(total=self.total_secons, connect=self.connect_seconds, sock_connect=self.sock_connect_seconds, sock_read=self.sock_read_seconds)
         
         # Connection pool configuration
-        # For resource-constrained environments (0.5 CPU, 350MB RAM)
-        self.pool_size = int(os.getenv("HTTP_POOL_SIZE", "50"))
-        self.pool_size_per_host = int(os.getenv("HTTP_POOL_SIZE_PER_HOST", "40"))
+        self.pool_size = int(settings.HTTP_POOL_SIZE)
+        self.pool_size_per_host = int(settings.HTTP_POOL_SIZE_PER_HOST)
+        self.ttl_dns_cache = int(settings.HTTP_TTL_DNS_CACHE)
 
     async def start(self):
         """Create session on app startup"""
         if self._session is None or self._session.closed:
             # Configure TCPConnector with connection pool limits
             connector = TCPConnector(
-                limit=self.pool_size,  # Max total connections
-                limit_per_host=self.pool_size_per_host,  # Max per backend host
-                ttl_dns_cache=300,  # DNS cache TTL in seconds
-                force_close=False,  # Reuse connections
-                enable_cleanup_closed=True  # Clean up closed connections
+                limit=self.pool_size, 
+                limit_per_host=self.pool_size_per_host,
+                ttl_dns_cache=self.ttl_dns_cache, 
+                force_close=False, 
+                enable_cleanup_closed=True
             )
             self._session = ClientSession(
                 timeout=self.timeout,
