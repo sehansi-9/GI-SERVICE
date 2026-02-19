@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     HTTP_TIMEOUT_CONNECT: int = 30
     HTTP_TIMEOUT_SOCK_CONNECT: int = 30
     HTTP_TIMEOUT_SOCK_READ: int = 90
+    THROTTLING_MAX_CONCURRENT: int = 200
+    THROTTLING_TIMEOUT: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

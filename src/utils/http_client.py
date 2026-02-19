@@ -7,17 +7,17 @@ class HTTPClient:
     def __init__(self):
         self._session: Optional[ClientSession] = None
 
-        self.total_secons = int(settings.HTTP_TIMEOUT_TOTAL)
-        self.connect_seconds = int(settings.HTTP_TIMEOUT_CONNECT)
-        self.sock_connect_seconds = int(settings.HTTP_TIMEOUT_SOCK_CONNECT)
-        self.sock_read_seconds = int(settings.HTTP_TIMEOUT_SOCK_READ)
+        self.total_seconds = settings.HTTP_TIMEOUT_TOTAL
+        self.connect_seconds = settings.HTTP_TIMEOUT_CONNECT
+        self.sock_connect_seconds = settings.HTTP_TIMEOUT_SOCK_CONNECT
+        self.sock_read_seconds = settings.HTTP_TIMEOUT_SOCK_READ
 
-        self.timeout = ClientTimeout(total=self.total_secons, connect=self.connect_seconds, sock_connect=self.sock_connect_seconds, sock_read=self.sock_read_seconds)
+        self.timeout = ClientTimeout(total=self.total_seconds, connect=self.connect_seconds, sock_connect=self.sock_connect_seconds, sock_read=self.sock_read_seconds)
         
         # Connection pool configuration
-        self.pool_size = int(settings.HTTP_POOL_SIZE)
-        self.pool_size_per_host = int(settings.HTTP_POOL_SIZE_PER_HOST)
-        self.ttl_dns_cache = int(settings.HTTP_TTL_DNS_CACHE)
+        self.pool_size = settings.HTTP_POOL_SIZE
+        self.pool_size_per_host = settings.HTTP_POOL_SIZE_PER_HOST
+        self.ttl_dns_cache = settings.HTTP_TTL_DNS_CACHE
 
     async def start(self):
         """Create session on app startup"""
