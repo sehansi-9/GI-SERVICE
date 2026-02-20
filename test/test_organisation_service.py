@@ -363,24 +363,35 @@ async def test_department_history_timeline_success(organisation_service, mock_op
     # gov_01 -> fetch_relation(AS_PRESIDENT) -> [pres_01 (Open-ended)]
     # pres_01 -> get_entities -> President Entity
     
-    mock_opengin_service.fetch_relation.side_effect = [
-        [Relation(relatedEntityId="dep_02")], # Lineage dep_01
-        [], # Lineage dep_02
-        [Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")], # dep_01 -> min_01
-        [Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")], # dep_02 -> min_02
-        [Relation(relatedEntityId="pers_01", startTime="2020-02-01T00:00:00Z", endTime="2020-08-01T00:00:00Z")], # min_01 -> pers_01
-        [Relation(relatedEntityId="pers_01", startTime="2021-05-01T00:00:00Z", endTime="2021-12-01T00:00:00Z")], # min_02 -> pers_01
-        [Relation(relatedEntityId="pres_01", startTime="2019-01-01T00:00:00Z", endTime="")] # President relation
-    ]
-    
-    # Mocking entities
-    # The order of get_entities calls depends on sorting/parallel execution, but map results expect specific IDs
-    mock_opengin_service.get_entities.side_effect = [
-        [Entity(id="min_01", name='{"value": "4d696e6973747279204f6e65"}')], # Ministry One
-        [Entity(id="min_02", name='{"value": "4d696e69737472792054776f"}')], # Ministry Two
-        [Entity(id="pers_01", name='{"value": "4d696e69737465722041"}')],    # Minister A
-        [Entity(id="pres_01", name='{"value": "507265736964656e742058"}')]   # President X
-    ]
+    async def fetch_relation_handler(entityId, relation):
+        if relation.name == "RENAMED_TO":
+            return [Relation(relatedEntityId="dep_02")] if entityId == "dep_01" else []
+        if relation.name == "AS_DEPARTMENT":
+            if entityId == "dep_01":
+                return [Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")]
+            if entityId == "dep_02":
+                return [Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")]
+        if relation.name == "AS_APPOINTED":
+            if entityId == "min_01":
+                return [Relation(relatedEntityId="pers_01", startTime="2020-02-01T00:00:00Z", endTime="2020-08-01T00:00:00Z")]
+            if entityId == "min_02":
+                return [Relation(relatedEntityId="pers_01", startTime="2021-05-01T00:00:00Z", endTime="2021-12-01T00:00:00Z")]
+        if entityId == "gov_01" and relation.name == "AS_PRESIDENT":
+            return [Relation(relatedEntityId="pres_01", startTime="2019-01-01T00:00:00Z", endTime="")]
+        return []
+
+    async def get_entities_handler(entity):
+        mapping = {
+            "min_01": "4d696e6973747279204f6e65",
+            "min_02": "4d696e69737472792054776f",
+            "pers_01": "4d696e69737465722041",
+            "pres_01": "507265736964656e742058"
+        }
+        name_hex = mapping.get(entity.id)
+        return [Entity(id=entity.id, name=f'{{"value": "{name_hex}"}}')] if name_hex else []
+
+    mock_opengin_service.fetch_relation.side_effect = fetch_relation_handler
+    mock_opengin_service.get_entities.side_effect = get_entities_handler
 
     result = await organisation_service.department_history_timeline(department_id=department_id)
     
@@ -414,20 +425,32 @@ async def test_department_history_timeline_collapsing(organisation_service, mock
     # Setup IDs: Same ministry name ("Ministry of Media") for two different ministry IDs
     department_id = "dep_01"
     
-    mock_opengin_service.fetch_relation.side_effect = [
-        [], # Lineage (none)
-        [Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z"),
-         Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")], # min-dep relations
-        [Relation(relatedEntityId="pers_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")], # min_01 -> pers_01
-        [Relation(relatedEntityId="pers_01", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")]  # min_02 -> pers_01
-    ]
-    
-    # "Ministry of Media" in hex: 4d696e6973747279206f66204d65646961
-    mock_opengin_service.get_entities.side_effect = [
-        [Entity(id="min_01", name='{"value": "4d696e6973747279206f66204d65646961"}')], # Ministry of Media
-        [Entity(id="min_02", name='{"value": "4d696e6973747279206f66204d65646961"}')], # Ministry of Media
-        [Entity(id="pers_01", name='{"value": "52616e696c"}')]                         # Ranil
-    ]
+    async def fetch_relation_handler(entityId, relation):
+        if relation.name == "RENAMED_TO":
+            return []
+        if relation.name == "AS_DEPARTMENT":
+            return [
+                Relation(relatedEntityId="min_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z"),
+                Relation(relatedEntityId="min_02", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")
+            ]
+        if relation.name == "AS_APPOINTED":
+            if entityId == "min_01":
+                return [Relation(relatedEntityId="pers_01", startTime="2020-01-01T00:00:00Z", endTime="2021-01-01T00:00:00Z")]
+            if entityId == "min_02":
+                return [Relation(relatedEntityId="pers_01", startTime="2021-01-01T00:00:00Z", endTime="2022-01-01T00:00:00Z")]
+        return []
+
+    async def get_entities_handler(entity):
+        if entity.id in ["min_01", "min_02"]:
+            # "Ministry of Media" in hex
+            return [Entity(id=entity.id, name='{"value": "4d696e6973747279206f66204d65646961"}')]
+        if entity.id == "pers_01":
+            # "Ranil" in hex
+            return [Entity(id="pers_01", name='{"value": "52616e696c"}')]
+        return []
+
+    mock_opengin_service.fetch_relation.side_effect = fetch_relation_handler
+    mock_opengin_service.get_entities.side_effect = get_entities_handler
 
     result = await organisation_service.department_history_timeline(department_id=department_id)
     
