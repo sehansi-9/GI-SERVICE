@@ -201,7 +201,7 @@ class PersonService:
 
             columns = formatted_person_profile_data["data"]["columns"]
 
-            person_profile_dict = { col: value for col, value in zip(columns, row)}
+            person_profile_dict = dict(zip(columns, row))
 
             person_profile = PersonSource(**person_profile_dict)
 
