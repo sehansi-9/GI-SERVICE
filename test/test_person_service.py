@@ -245,11 +245,13 @@ async def test_fetch_person_profile_success(person_service, mock_opengin_service
     person_id = "person_123"
 
     mock_opengin_service.get_entities = AsyncMock(return_value=None)
-    mock_opengin_service.get_attributes = AsyncMock(return_value={
-        "start": "",
-        "end": "",
-        "value": "encoded",
-    })
+    mock_opengin_service.get_attributes = AsyncMock(
+        return_value={
+            "start": "",
+            "end": "",
+            "value": "encoded",
+        }
+    )
 
     fake_json = {
         "type": "tabular",
@@ -308,24 +310,27 @@ async def test_fetch_person_profile_success(person_service, mock_opengin_service
         dataset_name=f"{person_id}_profile",
     )
 
+
 @pytest.mark.asyncio
 async def test_fetch_person_profile_invalid_id(person_service):
     with pytest.raises(BadRequestError):
         await person_service.fetch_person_profile(" ")
 
+
 @pytest.mark.asyncio
 async def test_fetch_person_profile_rows_empty_should_raise_not_found(
-    person_service,
-    mock_opengin_service
+    person_service, mock_opengin_service
 ):
     person_id = "person_123"
 
     mock_opengin_service.get_entities = AsyncMock(return_value=None)
-    mock_opengin_service.get_attributes = AsyncMock(return_value={
-        "start": "",
-        "end": "",
-        "value": "encoded",
-    })
+    mock_opengin_service.get_attributes = AsyncMock(
+        return_value={
+            "start": "",
+            "end": "",
+            "value": "encoded",
+        }
+    )
 
     with (
         patch(
@@ -333,15 +338,22 @@ async def test_fetch_person_profile_rows_empty_should_raise_not_found(
             return_value={
                 "data": {
                     "columns": [
-                        "name","political_party","date_of_birth","religion","profession",
-                        "email","phone_number","education_qualifications",
-                        "professional_qualifications","image_url"
+                        "name",
+                        "political_party",
+                        "date_of_birth",
+                        "religion",
+                        "profession",
+                        "email",
+                        "phone_number",
+                        "education_qualifications",
+                        "professional_qualifications",
+                        "image_url",
                     ],
-                    "rows": []  
+                    "rows": [],
                 }
-            }
+            },
         ),
-        patch("src.services.person_service.Util.calculate_age") as mock_calculate_age
+        patch("src.services.person_service.Util.calculate_age") as mock_calculate_age,
     ):
         with pytest.raises(NotFoundError) as exc:
             await person_service.fetch_person_profile(person_id)
@@ -350,8 +362,181 @@ async def test_fetch_person_profile_rows_empty_should_raise_not_found(
 
         mock_calculate_age.assert_not_called()
 
+
 @pytest.mark.asyncio
-async def test_fetch_person_profile_internal_error(person_service, mock_opengin_service):
+async def test_fetch_person_profile_with_null_values_coming_from_upstream(
+    person_service, mock_opengin_service
+):
+    person_id = "person_123"
+
+    mock_opengin_service.get_entities = AsyncMock(return_value=None)
+    mock_opengin_service.get_attributes = AsyncMock(
+        return_value={
+            "start": "",
+            "end": "",
+            "value": "encoded",
+        }
+    )
+
+    with patch(
+        "src.services.person_service.Util.transform_data_for_chart",
+        return_value={
+            "data": {
+                "columns": [
+                    "name",
+                    "political_party",
+                    "date_of_birth",
+                    "religion",
+                    "profession",
+                    "email",
+                    "phone_number",
+                    "education_qualifications",
+                    "professional_qualifications",
+                    "image_url",
+                ],
+                "rows": [
+                    [
+                        "Test Name",
+                        None,
+                        "1990-01-01",
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ]
+                ],
+            }
+        },
+    ):
+        result = await person_service.fetch_person_profile(person_id)
+
+        assert result.name == "Test Name"
+        assert result.political_party is None
+        assert result.date_of_birth == date(1990, 1, 1)
+        assert result.religion is None
+        assert result.profession is None
+        assert result.email is None
+        assert result.phone_number is None
+        assert result.education_qualifications is None
+        assert result.professional_qualifications is None
+        assert result.image_url is None
+        assert result.age == 36
+
+@pytest.mark.asyncio
+async def test_fetch_person_profile_with_null_values_coming_from_upstream_2(
+    person_service, mock_opengin_service
+):
+    person_id = "person_123"
+
+    mock_opengin_service.get_entities = AsyncMock(return_value=None)
+    mock_opengin_service.get_attributes = AsyncMock(
+        return_value={
+            "start": "",
+            "end": "",
+            "value": "encoded",
+        }
+    )
+
+    with patch(
+        "src.services.person_service.Util.transform_data_for_chart",
+        return_value={
+            "data": {
+                "columns": [
+                    "name",
+                    "political_party",
+                    "date_of_birth",
+                    "religion",
+                    "profession",
+                    "email",
+                    "phone_number",
+                    "education_qualifications",
+                    "professional_qualifications",
+                    "image_url",
+                ],
+                "rows": [
+                    [
+                        "Test Name",
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ]
+                ],
+            }
+        },
+    ):
+        result = await person_service.fetch_person_profile(person_id)
+
+        assert result.name == "Test Name"
+        assert result.political_party is None
+        assert result.date_of_birth is None
+        assert result.religion is None
+        assert result.profession is None
+        assert result.email is None
+        assert result.phone_number is None
+        assert result.education_qualifications is None
+        assert result.professional_qualifications is None
+        assert result.image_url is None
+        assert result.age is None
+
+@pytest.mark.asyncio
+async def test_fetch_person_profile_with_null_name_should_raise_error(
+    person_service, mock_opengin_service
+):
+    person_id = "person_123"
+
+    mock_opengin_service.get_entities = AsyncMock(return_value=None)
+    mock_opengin_service.get_attributes = AsyncMock(return_value={})
+
+    with patch(
+        "src.services.person_service.Util.transform_data_for_chart",
+        return_value={
+            "data": {
+                "columns": [
+                    "name",
+                    "political_party",
+                    "date_of_birth",
+                    "religion",
+                    "profession",
+                    "email",
+                    "phone_number",
+                    "education_qualifications",
+                    "professional_qualifications",
+                    "image_url",
+                ],
+                "rows": [
+                    [
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ]
+                ],
+            }
+        },
+    ):
+        with pytest.raises(InternalServerError):
+            await person_service.fetch_person_profile(person_id)
+
+
+@pytest.mark.asyncio
+async def test_fetch_person_profile_internal_error(
+    person_service, mock_opengin_service
+):
     mock_opengin_service.get_entities.return_value = None
     mock_opengin_service.get_attributes.side_effect = Exception("boom")
 
