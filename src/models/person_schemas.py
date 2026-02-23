@@ -6,18 +6,18 @@ class PersonSource(BaseModel):
     Person source schema
     """
     name: str
-    political_party: str
-    date_of_birth: date
-    religion: str
-    profession: str
-    email: str
-    phone_number: str
-    education_qualifications: str
-    professional_qualifications: str
-    image_url: str
+    political_party: str | None = None
+    date_of_birth: date | None = None
+    religion: str | None = None
+    profession: str | None = None
+    email: str | None = None
+    phone_number: str | None = None
+    education_qualifications: str | None = None
+    professional_qualifications: str | None = None
+    image_url: str | None = None
 
 class PersonResponse(PersonSource):
     """
     Person response schema inherited from the PersonSource
     """
-    age: int
+    age: int | None = None

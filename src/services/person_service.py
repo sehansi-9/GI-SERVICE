@@ -206,7 +206,10 @@ class PersonService:
             person_profile = PersonSource(**person_profile_dict)
 
             # calculate the age
-            age = Util.calculate_age(person_profile.date_of_birth)
+            age = None
+
+            if person_profile.date_of_birth:
+                age = Util.calculate_age(person_profile.date_of_birth)
 
             person_profile_res = PersonResponse(**person_profile.model_dump(), age=age)
 
