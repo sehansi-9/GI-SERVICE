@@ -459,6 +459,69 @@ async def test_fetch_person_profile_with_null_values_coming_from_upstream_2(
                 "rows": [
                     [
                         "Test Name",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                    ]
+                ],
+            }
+        },
+    ):
+        result = await person_service.fetch_person_profile(person_id)
+
+        assert result.name == "Test Name"
+        assert result.political_party == ""
+        assert result.date_of_birth is None
+        assert result.religion == ""
+        assert result.profession == ""
+        assert result.email == ""
+        assert result.phone_number == ""
+        assert result.education_qualifications == ""
+        assert result.professional_qualifications == ""
+        assert result.image_url == ""
+        assert result.age is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_person_profile_with_null_values_coming_from_upstream_3(
+    person_service, mock_opengin_service
+):
+    person_id = "person_123"
+
+    mock_opengin_service.get_entities = AsyncMock(return_value=None)
+    mock_opengin_service.get_attributes = AsyncMock(
+        return_value={
+            "start": "",
+            "end": "",
+            "value": "encoded",
+        }
+    )
+
+    with patch(
+        "src.services.person_service.Util.transform_data_for_chart",
+        return_value={
+            "data": {
+                "columns": [
+                    "name",
+                    "political_party",
+                    "date_of_birth",
+                    "religion",
+                    "profession",
+                    "email",
+                    "phone_number",
+                    "education_qualifications",
+                    "professional_qualifications",
+                    "image_url",
+                ],
+                "rows": [
+                    [
+                        "Test Name",
                         None,
                         None,
                         None,

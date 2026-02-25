@@ -203,15 +203,15 @@ class PersonService:
 
             person_profile_dict = dict(zip(columns, row))
 
+            person_profile_dict["date_of_birth"] = (
+                person_profile_dict.get("date_of_birth") or None
+            )
+
             person_profile = PersonSource(**person_profile_dict)
 
-            # calculate the age
-            age = None
-
-            if person_profile.date_of_birth:
-                age = Util.calculate_age(person_profile.date_of_birth)
-
-            person_profile_res = PersonResponse(**person_profile.model_dump(), age=age)
+            dob = person_profile.date_of_birth
+            age = Util.calculate_age(dob) if dob else None
+            person_profile_res = PersonResponse(**person_profile_dict, age=age)
 
             return person_profile_res
 
