@@ -121,7 +121,7 @@ paths:
                 education_qualifications: "LLB (Hons)"
                 professional_qualifications: "Barrister-at-Law"
                 image_URL: "data/people/images/michael-carter.jpg"
-                active_portfolio: "Minister of Justice"
+                age: 45
 
         "400":
           description: Bad request - Invalid parameters
@@ -222,6 +222,7 @@ components:
         - education_qualifications
         - professional_qualifications
         - image_URL
+        - age
       properties:
         name:
           type: string
@@ -265,7 +266,7 @@ components:
           type: string
           description: "Path or URL to the profile image of the person"
           examples: ["data/people/images/michael-carter.jpg"]
-        active_portfolio:
-          type: [string, "null"]
-          description: "The person's currently active ministry portfolio. Null if the person does not currently hold an active position."
-          examples: ["Minister of Justice", null]
+        age:
+          type: integer
+          description: "The person's age"
+          examples: [45]
