@@ -191,10 +191,10 @@ class PersonService:
                     category_id=person_id,
                     dataset_name=f"{person_id}_profile",
                 )
-            except (BadRequestError, NotFoundError, InternalServerError):
+            except (BadRequestError, NotFoundError, InternalServerError) as e:
+                logger.info(f"Person profile not available for person {person_id}, falling back to name only. Reason: {type(e).__name__}")
                 person_name = Util.decode_protobuf_attribute_name(person_data_res[0].name)
-                person_profile_res = PersonResponse(name=person_name)
-                return person_profile_res
+                return PersonResponse(name=person_name)
 
             formatted_person_profile_data = Util.transform_data_for_chart(
                 attribute_data_out={"data": encoded_person_profile_data}
