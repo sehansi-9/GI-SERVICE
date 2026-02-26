@@ -184,12 +184,17 @@ class PersonService:
             if not person_id or not person_id.strip():
                 raise BadRequestError("Person ID is required")
 
-            await self.opengin_service.get_entities(Entity(id=person_id))
+            person_data_res = await self.opengin_service.get_entities(Entity(id=person_id))
 
-            encoded_person_profile_data = await self.opengin_service.get_attributes(
-                category_id=person_id,
-                dataset_name=f"{person_id}_profile",
-            )
+            try:
+                encoded_person_profile_data = await self.opengin_service.get_attributes(
+                    category_id=person_id,
+                    dataset_name=f"{person_id}_profile",
+                )
+            except (BadRequestError, NotFoundError, InternalServerError) as e:
+                logger.info(f"Person profile not available for person {person_id}, falling back to name only. Reason: {type(e).__name__}")
+                person_name = Util.decode_protobuf_attribute_name(person_data_res[0].name)
+                return PersonResponse(name=person_name)
 
             formatted_person_profile_data = Util.transform_data_for_chart(
                 attribute_data_out={"data": encoded_person_profile_data}
@@ -222,7 +227,7 @@ class PersonService:
             person_profile_res = PersonResponse(**person_profile_dict, age=age)
 
             return person_profile_res
-
+            
         except (BadRequestError, NotFoundError):
             raise
         except Exception as e:
