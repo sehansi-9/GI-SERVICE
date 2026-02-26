@@ -6,7 +6,9 @@ from src.utils.util_functions import Util
 from aiohttp import ClientSession
 from src.utils import http_client
 from src.models.organisation_schemas import Entity, Relation
-from src.models.person_schemas import PersonSource, PersonResponse
+from src.models.person_schemas import PersonResponse
+from datetime import datetime
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -207,9 +209,15 @@ class PersonService:
                 person_profile_dict.get("date_of_birth") or None
             )
 
-            person_profile = PersonSource(**person_profile_dict)
+            dob_str = person_profile_dict["date_of_birth"]
+            if dob_str:
+                try:
+                    dob = datetime.fromisoformat(dob_str).date()
+                except ValueError:
+                    dob = None  
+            else:
+                dob = None
 
-            dob = person_profile.date_of_birth
             age = Util.calculate_age(dob) if dob else None
             person_profile_res = PersonResponse(**person_profile_dict, age=age)
 
