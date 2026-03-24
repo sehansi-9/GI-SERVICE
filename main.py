@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.routers import organisation_router, data_router, search_router, person_router
+from src.routers import organisation_router, data_router, search_router, person_router, gazette_router
 from src.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from src.middleware.throttling import ThrottlingMiddleware
@@ -40,3 +40,4 @@ app.include_router(organisation_router)
 app.include_router(data_router)
 app.include_router(search_router)
 app.include_router(person_router)
+app.include_router(gazette_router)
