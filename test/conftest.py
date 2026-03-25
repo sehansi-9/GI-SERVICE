@@ -9,6 +9,7 @@ from services.organisation_service import OrganisationService
 from unittest.mock import AsyncMock
 from src.utils.util_functions import Util
 from src.services.person_service import PersonService
+from src.services.gazette_service import GazetteService
 
 # MockResponse class to simulate aiohttp responses
 class MockResponse:
@@ -71,3 +72,9 @@ def person_service(mock_opengin_service):
     """PersonService fixture with mocked OpenGINService"""
     return PersonService(mock_opengin_service)
 
+
+@pytest.fixture
+def gazette_service(mock_opengin_service):
+    """GazetteService fixture with mocked OpenGINService"""
+    config = {}
+    return GazetteService(config, mock_opengin_service)
