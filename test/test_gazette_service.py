@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.gazette_service import GazetteService
-from src.exception.exceptions import InternalServerError
+from src.exception.exceptions import InternalServerError, NotFoundError
 from src.models.organisation_schemas import Entity
 
 
@@ -46,7 +46,7 @@ async def test_get_gazette_data_points_success(gazette_service, mock_opengin_ser
 
 @pytest.mark.asyncio
 async def test_get_gazette_data_points_empty(gazette_service, mock_opengin_service):
-    mock_opengin_service.get_entities.return_value = []
+    mock_opengin_service.get_entities.side_effect = NotFoundError("not found")
 
     result = await gazette_service.get_gazette_data_points()
 

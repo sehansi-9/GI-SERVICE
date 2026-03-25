@@ -1,16 +1,12 @@
-from src.enums.relationEnum import RelationNameEnum
-from src.exception.exceptions import BadRequestError
-from src.exception.exceptions import NotFoundError
 from src.exception.exceptions import InternalServerError
 import asyncio
 from src.utils.util_functions import Util
 from aiohttp import ClientSession
 from src.utils import http_client
-from src.models.organisation_schemas import Entity, Relation, Kind
+from src.models.organisation_schemas import Entity, Kind
 from src.enums.kindEnum import KindMajorEnum, KindMinorEnum
-from typing import Optional, Sequence, Dict, List
+from typing import Dict, List
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -52,22 +48,24 @@ class GazetteService:
             results_gazettes = await asyncio.gather(
                 organization_gazettes_task, person_gazettes_task, return_exceptions=True
             )
-            organization_gazettes, person_gazettes = results_gazettes
-
             all_gazettes = []
-            if (
-                not isinstance(organization_gazettes, Exception)
-                and organization_gazettes
-            ):
-                all_gazettes.extend(organization_gazettes)
-            if not isinstance(person_gazettes, Exception) and person_gazettes:
-                all_gazettes.extend(person_gazettes)
+            for result in results_gazettes:
+                if not isinstance(result, Exception) and result:
+                    all_gazettes.extend(result)
 
             # aggregate by year and month
             res_dict: Dict[str, List[int]] = {}
             for gazette in all_gazettes:
                 try:
+                    if not gazette.created:
+                        logger.warning(f"Gazette with id {gazette.id} is missing creation date.")
+                        continue
+
                     dt_str = Util.normalize_timestamp(gazette.created)
+
+                    if not dt_str or len(dt_str) < 7:
+                        logger.error(f"Could not parse date for gazette with id {gazette.id}: {gazette.created}")
+                        continue
 
                     # Extract year and month
                     year = dt_str[:4]
@@ -77,8 +75,8 @@ class GazetteService:
                         res_dict[year] = [0] * 12
 
                     res_dict[year][month] += 1
-                except Exception as e:
-                    logger.error(f"Error parsing date for gazette: {e}")
+                except (ValueError, TypeError, IndexError) as e:
+                    logger.error(f"Error processing date for gazette with id {gazette.id}: {e}")
                     continue
 
             # Sort by year keys
