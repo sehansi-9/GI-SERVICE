@@ -79,7 +79,7 @@ class DocumentService:
                     logger.error(f"Error processing date for gazette with id {gazette.id}: {e}")
                     continue
 
-            # Sort by year keys and format as requested
+            # Sort by year keys and format
             sorted_years = sorted(res_dict.items())
             return {
                 "years": [

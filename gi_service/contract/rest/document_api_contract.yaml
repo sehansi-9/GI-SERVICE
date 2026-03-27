@@ -17,8 +17,8 @@ paths:
     get:
       tags:
         - Document
-      summary: Get gazette data points.
-      description: Returns number of gazettes created for each month for all years.
+      summary: Get a count of gazettes created for each month for all years.
+      description: Returns a list of years with the number of gazettes created for each month
       operationId: getGazetteDataPoints
       responses:
         "200":

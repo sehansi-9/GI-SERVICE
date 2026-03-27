@@ -8,7 +8,7 @@ def get_document_service(config: dict = Depends(get_config)):
     opengin_service = OpenGINService(config=config)
     return DocumentService(config, opengin_service)
 
-@router.get('/data-points', summary="Get gazette data points.", description="Returns number of gazettes created for each month for all years.")
+@router.get('/data-points', summary="Get gazette data points.", description="Returns a list of years with the number of gazettes created for each month")
 async def gazette_data_points(
     service: DocumentService = Depends(get_document_service)
 ):
