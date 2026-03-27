@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class GazetteService:
+class DocumentService:
     """
     This service is responsible for executing aggregate functions by calling the OpenGINService and processing the returned data.
     """
@@ -32,7 +32,7 @@ class GazetteService:
                 Entity(
                     kind=Kind(
                         major=KindMajorEnum.DOCUMENT.value,
-                        minor=KindMinorEnum.EXTRA_ORDINARY_GAZETTE_ORGANISATION.value,
+                        minor=KindMinorEnum.EXTGZT_ORGANISATION.value,
                     )
                 )
             )
@@ -40,7 +40,7 @@ class GazetteService:
                 Entity(
                     kind=Kind(
                         major=KindMajorEnum.DOCUMENT.value,
-                        minor=KindMinorEnum.EXTRA_ORDINARY_GAZETTE_PERSON.value,
+                        minor=KindMinorEnum.EXTGZT_PERSON.value,
                     )
                 )
             )
@@ -79,8 +79,14 @@ class GazetteService:
                     logger.error(f"Error processing date for gazette with id {gazette.id}: {e}")
                     continue
 
-            # Sort by year keys
-            return dict(sorted(res_dict.items()))
+            # Sort by year keys and format as requested
+            sorted_years = sorted(res_dict.items())
+            return {
+                "years": [
+                    {"year": int(year), "values": values}
+                    for year, values in sorted_years
+                ]
+            }
 
         except Exception as e:
             logger.error(f"Error in fetching gazette data points: {str(e)}")

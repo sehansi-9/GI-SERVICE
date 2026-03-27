@@ -1,0 +1,85 @@
+openapi: 3.1.0
+
+info:
+  title: OpenGIN Service API - Document
+  description: This document gives the structure of APIs for the OpenGIN Document Services.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081
+
+tags:
+  - name: Document
+    description: APIs for Document
+
+paths:
+  /v1/document/data-points:
+    get:
+      tags:
+        - Document
+      summary: Get gazette data points.
+      description: Returns number of gazettes created for each month for all years.
+      operationId: getGazetteDataPoints
+      responses:
+        "200":
+          description: Successfully returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  years:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        year:
+                          type: integer
+                        values:
+                          type: array
+                          items:
+                            type: integer
+                          minItems: 12
+                          maxItems: 12
+              example:
+                years:
+                  - year: 2023
+                    values: [10, 5, 8, 12, 7, 9, 11, 6, 4, 15, 13, 14]
+                  - year: 2024
+                    values: [12, 8, 10, 15, 9, 11, 13, 7, 5, 18, 16, 17]
+
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+
+components:
+  schemas:
+    YearlyGazetteDataPointsResponse:
+      type: object
+      description: Root response object containing yearly gazette data.
+      properties:
+        years:
+          type: array
+          description: An array of yearly gazette data.
+
+
+    YearlyData:
+      type: object
+      description: Document statistics for a specific year.
+      properties:
+        year:
+          type: integer
+          description: The year these data points belong to.
+          examples: [2023, 2024]
+        values:
+          type: array
+          description: >
+            An array containing exactly 12 integers, where each integer represents the number of 
+            documents created in that month (January to December).
+          items:
+            type: integer
+            minimum: 0
+          minItems: 12
+          maxItems: 12
+          examples: [[0, 2, 3, 4, 2, 4, 2, 4, 4, 4, 3, 7]]

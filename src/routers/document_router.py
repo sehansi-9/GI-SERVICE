@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends
 from src.dependencies import get_config
-from src.services import OpenGINService, GazetteService
+from src.services import OpenGINService, DocumentService
 
-router = APIRouter(prefix="/v1/gazette", tags=["Gazette"])
+router = APIRouter(prefix="/v1/document", tags=["Document"])
 
-def get_gazette_service(config: dict = Depends(get_config)):
+def get_document_service(config: dict = Depends(get_config)):
     opengin_service = OpenGINService(config=config)
-    return GazetteService(config, opengin_service)
+    return DocumentService(config, opengin_service)
 
 @router.get('/data-points', summary="Get gazette data points.", description="Returns number of gazettes created for each month for all years.")
 async def gazette_data_points(
-    service: GazetteService = Depends(get_gazette_service)
+    service: DocumentService = Depends(get_document_service)
 ):
     service_response = await service.get_gazette_data_points()
     return service_response
