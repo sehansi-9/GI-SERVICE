@@ -6,7 +6,6 @@ from src.middleware.throttling import ThrottlingMiddleware
 from src.utils.http_client import http_client
 from contextlib import asynccontextmanager
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await http_client.start()
