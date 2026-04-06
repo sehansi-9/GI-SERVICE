@@ -1,8 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 class Settings(BaseSettings):
     BASE_URL_QUERY: str
-    BASE_URL_CRUD: str | None = None
+    ALLOWED_ORIGINS: str
     HTTP_POOL_SIZE: int = 50 
     HTTP_POOL_SIZE_PER_HOST: int = 40
     HTTP_TTL_DNS_CACHE: int = 300
