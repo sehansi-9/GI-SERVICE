@@ -85,6 +85,7 @@ flowchart LR
    ```env
    # Base URLs for Read(Query) services in OpenGIN
    BASE_URL_QUERY=http://0.0.0.0:8081
+   ALLOWED_ORIGINS=http://localhost:3000
    ```
 
 4. **Run the Application**
@@ -127,6 +128,7 @@ Once the server is running, you can access:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `BASE_URL_QUERY` | Query(Read) OpenGIN service URL | `http://0.0.0.0:8081` |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (e.g. `https://example.com,http://localhost:3000`). This must be configured. | `None (required)` |
 
 ## Contributing
 

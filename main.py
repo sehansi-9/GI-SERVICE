@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from src.routers import organisation_router, data_router, search_router, person_router
+from src.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from src.middleware.throttling import ThrottlingMiddleware
 from src.utils.http_client import http_client
@@ -17,10 +18,17 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
-        
+
+allowed_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
+if not allowed_origins:
+    raise ValueError("ALLOWED_ORIGINS is not configured")
+
+
+   
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],            # or ["*"] for all
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
