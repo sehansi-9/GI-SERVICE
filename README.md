@@ -128,7 +128,7 @@ Once the server is running, you can access:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `BASE_URL_QUERY` | Query(Read) OpenGIN service URL | `http://0.0.0.0:8081` |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (e.g. `https://example.com,http://localhost:3000`). This must be configured in production. | `None (required)` |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (e.g. `https://example.com,http://localhost:3000`). This must be configured. | `None (required)` |
 
 ## Contributing
 
