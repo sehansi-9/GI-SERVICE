@@ -76,5 +76,4 @@ def person_service(mock_opengin_service):
 @pytest.fixture
 def document_service(mock_opengin_service):
     """DocumentService fixture with mocked OpenGINService"""
-    config = {}
-    return DocumentService(config, mock_opengin_service)
+    return DocumentService(mock_opengin_service)
