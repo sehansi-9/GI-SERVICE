@@ -18,7 +18,7 @@ paths:
       tags:
         - Document
       summary: Get a count of gazettes created for each month for all years.
-      description: Returns a list of years with the number of gazettes created for each month
+      description: Returns a list of sorted years with the number of gazettes created for each month
       operationId: getGazetteDataPoints
       responses:
         "200":
@@ -26,23 +26,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  years:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        year:
-                          type: integer
-                        values:
-                          type: array
-                          items:
-                            type: integer
-                          minItems: 12
-                          maxItems: 12
+                $ref: "#/components/schemas/YearlyGazetteDataPointsResponse"
               example:
-                years:
+                data:
                   - year: 2023
                     values: [10, 5, 8, 12, 7, 9, 11, 6, 4, 15, 13, 14]
                   - year: 2024
@@ -59,9 +45,11 @@ components:
       type: object
       description: Root response object containing yearly gazette data.
       properties:
-        years:
+        data:
           type: array
           description: An array of yearly gazette data.
+          items:
+            $ref: "#/components/schemas/YearlyData"
 
 
     YearlyData:

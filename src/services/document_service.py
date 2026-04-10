@@ -6,6 +6,7 @@ from src.utils import http_client
 from src.models.organisation_schemas import Entity, Kind
 from src.enums.kindEnum import KindMajorEnum, KindMinorEnum
 from typing import Dict, List
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -57,32 +58,42 @@ class DocumentService:
             res_dict: Dict[str, List[int]] = {}
             for gazette in all_gazettes:
                 try:
-                    if not gazette.created:
-                        logger.warning(f"Gazette with id {gazette.id} is missing creation date.")
+                    gazette_id = getattr(gazette, "id", "unknown")
+                    created_date = getattr(gazette, "created", None)
+
+                    if not created_date:
+                        logger.warning(
+                            f"Gazette with id {gazette_id} is missing creation date."
+                        )
                         continue
 
-                    dt_str = Util.normalize_timestamp(gazette.created)
-
-                    if not dt_str or len(dt_str) < 7:
-                        logger.error(f"Could not parse date for gazette with id {gazette.id}: {gazette.created}")
+                    dt_str = Util.normalize_timestamp(created_date)
+                    if not dt_str:
+                        logger.error(
+                            f"Could not parse date for gazette with id {gazette_id}: {created_date}"
+                        )
                         continue
 
-                    # Extract year and month
-                    year = dt_str[:4]
-                    month = int(dt_str[5:7]) - 1  # 0-indexed for array
+                    # parsing using datetime
+                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+                    year = str(dt.year)
+                    month = dt.month - 1  # 0-indexed for array
 
                     if year not in res_dict:
                         res_dict[year] = [0] * 12
 
                     res_dict[year][month] += 1
-                except (ValueError, TypeError, IndexError) as e:
-                    logger.error(f"Error processing date for gazette with id {gazette.id}: {e}")
+                except (ValueError, TypeError, IndexError, AttributeError) as e:
+                    gazette_id = getattr(gazette, "id", "unknown")
+                    logger.error(
+                        f"Error processing date for gazette with id {gazette_id}: {e}"
+                    )
                     continue
 
             # Sort by year keys and format
             sorted_years = sorted(res_dict.items())
             return {
-                "years": [
+                "data": [
                     {"year": int(year), "values": values}
                     for year, values in sorted_years
                 ]
