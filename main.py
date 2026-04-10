@@ -1,8 +1,12 @@
 from fastapi import FastAPI
-from src.routers import payload_incoming_router
-from src.routers import organisation_router, data_router, search_router, person_router, document_router
-from dotenv import load_dotenv
-import os
+from src.routers import (
+    organisation_router,
+    data_router,
+    search_router,
+    person_router,
+    document_router,
+)
+from src.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from src.middleware.throttling import ThrottlingMiddleware
 from src.utils.http_client import http_client
@@ -16,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="GI - Service",     
-    description="API Adapter to the OpenGIN (Open General Information Network)",
+    description="API Adapter to the OpenGIn (Open General Information Network)",
     version="1.0.0",
     lifespan=lifespan
 )
