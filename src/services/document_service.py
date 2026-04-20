@@ -56,8 +56,8 @@ class DocumentService:
             # aggregate by year and month
             res_dict: Dict[str, List[int]] = {}
             for gazette in all_gazettes:
+                gazette_id = getattr(gazette, "id", "unknown")
                 try:
-                    gazette_id = getattr(gazette, "id", "unknown")
                     created_date = getattr(gazette, "created", None)
 
                     if not created_date:
@@ -83,7 +83,6 @@ class DocumentService:
 
                     res_dict[year][month] += 1
                 except (ValueError, TypeError, IndexError, AttributeError) as e:
-                    gazette_id = getattr(gazette, "id", "unknown")
                     logger.error(
                         f"Error processing date for gazette with id {gazette_id}: {e}"
                     )
